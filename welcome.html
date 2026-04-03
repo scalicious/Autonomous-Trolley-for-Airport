@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}Welcome - Smart Trolley{% endblock %}
+
+{% block content %}
+<div class="welcome-hero">
+    <div class="container text-center">
+        <h1 class="hero-title">Automatic Trolley Control</h1>
+        <p class="hero-subtitle">Effortless navigation and smart assistance for your belongings.</p>
+        <div class="hero-actions">
+            <a href="/login" class="btn btn-primary">Login to Dashboard</a>
+            <a href="/guest" class="btn btn-secondary">Continue as Guest</a>
+        </div>
+    </div>
+</div>
+
+<div class="container welcome-features">
+    <h2 class="section-title text-center">Key Features</h2>
+    <div class="feature-grid">
+        <div class="feature-item">
+            <h3><span><i class="fas fa-map-marked-alt"></i></span> Smart Navigation</h3>
+            <p>Trolley autonomously navigates to your chosen destination.</p>
+        </div>
+        <div class="feature-item">
+            <h3><span><i class="fas fa-users"></i></span> Human Following</h3>
+            <p>Personalized mode where the trolley follows your movements.</p>
+        </div>
+        <div class="feature-item">
+            <h3><span><i class="fas fa-shield-alt"></i></span> Secure Payments</h3>
+            <p>Seamless and secure transactions for all services.</p>
+        </div>
+        <div class="feature-item">
+            <h3><span><i class="fas fa-chart-line"></i></span> Real-time Status</h3>
+            <p>Monitor connection, distance, mode, and battery at a glance.</p>
+        </div>
+    </div>
+</div>
+
+<style>
+    .welcome-hero {
+        background-color: var(--bg-secondary);
+        padding: 4rem 0;
+        text-align: center;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .hero-title {
+        font-size: 3.5rem;
+        font-weight: 800;
+        margin-bottom: 1rem;
+        color: var(--text-primary);
+    }
+
+    .hero-subtitle {
+        font-size: 1.25rem;
+        color: var(--text-secondary);
+        margin-bottom: 2rem;
+        max-width: 700px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .hero-actions .btn {
+        margin: 0 0.5rem;
+    }
+
+    .welcome-features {
+        padding: 3rem 0;
+    }
+
+    .section-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 3rem;
+    }
+
+    .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 2rem;
+    }
+
+    .feature-item {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 0.75rem;
+        padding: 2rem;
+        text-align: center;
+    }
+
+    .feature-item h3 {
+        font-size: 1.5rem;
+        color: var(--accent-blue);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+    }
+
+    .feature-item h3 span {
+        font-size: 1.75rem;
+    }
+
+    .feature-item p {
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+    }
+
+    @media (max-width: 768px) {
+        .hero-title {
+            font-size: 2.5rem;
+        }
+
+        .hero-subtitle {
+            font-size: 1rem;
+        }
+
+        .section-title {
+            font-size: 2rem;
+        }
+
+        .hero-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .hero-actions .btn {
+            width: 80%;
+            margin: 0 auto;
+        }
+    }
+</style>
+{% endblock %}

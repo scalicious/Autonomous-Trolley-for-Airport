@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Self-Moving Inside - Smart Trolley{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+    <div class="card pnr-search-card">
+        <h2 class="card-title">Airport Navigation</h2>
+        <p class="card-subtitle">
+            Enter your PNR and let the trolley guide you seamlessly to your boarding gate.
+        </p>
+
+        <!-- PNR TERMINAL -->
+        <div class="form-group">
+            <label for="pnrInput">PNR Number (10 Characters)</label>
+            <div class="input-group">
+                <input type="text"
+                       id="pnrInput"
+                       class="form-control"
+                       placeholder="XXXXXXXXXX"
+                       maxlength="10">
+                <button class="btn btn-primary" onclick="searchPNR()">
+                    Find Gate
+                </button>
+            </div>
+            <p class="form-hint">Secure lookup • Real-time airport database</p>
+        </div>
+
+        <!-- RESULT -->
+        <div id="pnrResult" class="alert hidden"></div>
+
+        <!-- ACTION PANEL -->
+        <div id="gateActions" class="control-panel hidden">
+            <button class="btn btn-success" id="startBtn" onclick="startNavigation()">
+                Start Navigation
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .pnr-search-card {
+        width: 100%;
+        max-width: 600px;
+    }
+
+    .input-group {
+        display: flex;
+        gap: 0.75rem;
+    }
+
+    .input-group .form-control {
+        flex-grow: 1;
+    }
+
+    .form-hint {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        margin-top: 0.5rem;
+    }
+
+    .control-panel {
+        margin-top: 2rem;
+        text-align: center;
+    }
+</style>
+
+<script>
+    let currentGate = '';
+
+    async function searchPNR() {
+        const pnr = document.getElementById('pnrInput').value.trim();
+
+        if (pnr.length !== 10 || !/^\d+$/.test(pnr)) {
+            showResult('Enter a valid 10-digit PNR number', 'alert-danger');
+            return;
+        }
+
+        const res = await fetch('/api/pnr/search', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ pnr })
+        });
+        const data = await res.json();
+
+        if (data.status === 'success') {
+            currentGate = data.gate;
+            showResult(`Gate ${data.gate} found for flight ${data.flight}`, 'alert-success');
+            document.getElementById('gateActions').classList.remove('hidden');
+            document.getElementById('startBtn').textContent =
+                `Start to Gate ${data.gate}`;
+        } else {
+            showResult(data.message || 'PNR not found', 'alert-danger');
+        }
+    }
+
+    async function startNavigation() {
+        const pnr = document.getElementById('pnrInput').value.trim();
+        const res = await fetch('/api/mode/self-inside', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ gate: currentGate, pnr: pnr })
+        });
+        const data = await res.json();
+        showResult(data.message || 'Navigation started', 'alert-success');
+    }
+
+    function showResult(msg, type) {
+        const el = document.getElementById('pnrResult');
+        el.textContent = msg;
+        el.className = `alert ${type}`;
+        el.classList.remove('hidden');
+        setTimeout(() => el.classList.add('hidden'), 3000);
+    }
+</script>
+{% endblock %}
+

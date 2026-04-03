@@ -1,0 +1,719 @@
+{% extends "base.html" %}
+{% block title %}Trolley Control - Smart Trolley{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+    <div class="control-layout">
+
+        <!-- LEFT: D-PAD CONTROLLER -->
+        <div class="card controller-card">
+            <h2 class="card-title">Manual Control</h2>
+            <p class="card-subtitle">Drive the trolley using the directional pad below.</p>
+
+            <!-- ESP32 CONNECTION STATUS -->
+            <div class="esp-status-bar" id="espStatusBar">
+                <span class="esp-dot" id="espDot"></span>
+                <span id="espStatusText">Checking ESP32…</span>
+                <button class="btn btn-secondary btn-xs" onclick="pingESP32()">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+
+            <!-- D-PAD -->
+            <div class="dpad-container">
+                <div class="dpad">
+                    <button class="dpad-btn dpad-up" id="btnForward"
+                            onmousedown="sendCmd('forward')" onmouseup="sendCmd('stop')"
+                            ontouchstart="sendCmd('forward')" ontouchend="sendCmd('stop')">
+                        <i class="fas fa-chevron-up"></i>
+                    </button>
+                    <button class="dpad-btn dpad-left" id="btnLeft"
+                            onmousedown="sendCmd('left')" onmouseup="sendCmd('stop')"
+                            ontouchstart="sendCmd('left')" ontouchend="sendCmd('stop')">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button class="dpad-btn dpad-center" id="btnStop" onclick="sendCmd('stop')">
+                        <i class="fas fa-stop"></i>
+                    </button>
+                    <button class="dpad-btn dpad-right" id="btnRight"
+                            onmousedown="sendCmd('right')" onmouseup="sendCmd('stop')"
+                            ontouchstart="sendCmd('right')" ontouchend="sendCmd('stop')">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                    <button class="dpad-btn dpad-down" id="btnBackward"
+                            onmousedown="sendCmd('backward')" onmouseup="sendCmd('stop')"
+                            ontouchstart="sendCmd('backward')" ontouchend="sendCmd('stop')">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- KEYBOARD HINT -->
+            <p class="keyboard-hint">
+                <i class="fas fa-keyboard"></i> Use <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> or Arrow keys
+            </p>
+
+            <!-- FOLLOW MODE TOGGLE -->
+            <div class="follow-toggle-section">
+                <h3 class="section-label">Follow Mode</h3>
+                <div class="toggle-row">
+                    <label class="toggle-switch" for="followToggle">
+                        <input type="checkbox" id="followToggle" onchange="toggleFollow(this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span id="followLabel" class="toggle-label">OFF</span>
+                </div>
+            </div>
+
+            <!-- RSSI TELEMETRY -->
+            <div class="rssi-panel" id="rssiPanel">
+                <h3 class="section-label">Live RSSI Telemetry</h3>
+                <div class="rssi-grid">
+                    <div class="rssi-item">
+                        <span class="rssi-label">Signal</span>
+                        <span class="rssi-value" id="rssiValue">-- dBm</span>
+                    </div>
+                    <div class="rssi-item">
+                        <span class="rssi-label">Bearing</span>
+                        <span class="rssi-value" id="rssiAngle">--°</span>
+                    </div>
+                    <div class="rssi-item">
+                        <span class="rssi-label">Est. Distance</span>
+                        <span class="rssi-value" id="rssiDist">-- m</span>
+                    </div>
+                </div>
+                <div class="rssi-bar-wrap">
+                    <div class="rssi-bar" id="rssiBar" style="width: 0%"></div>
+                </div>
+                <p class="rssi-hint">Telemetry updates when Follow Mode is ON and ESP32 is connected</p>
+            </div>
+
+            <!-- COMMAND LOG -->
+            <div class="cmd-log-container">
+                <h3 class="section-label">Command Log</h3>
+                <div class="cmd-log" id="cmdLog">
+                    <div class="log-entry log-info">Ready. Connect to ESP32 to start.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: ESP32 NATIVE INTERFACE + CONFIG -->
+        <div class="right-panel">
+            <!-- ESP32 IP CONFIG -->
+            <div class="card config-card">
+                <h3 class="card-title">ESP32 Connection</h3>
+                <div class="ip-config">
+                    <div class="form-group">
+                        <label for="espIpInput">ESP32 IP Address</label>
+                        <div class="input-group">
+                            <input type="text" id="espIpInput" class="form-control"
+                                   value="{{ esp32_ip }}" placeholder="192.168.4.1">
+                            <button class="btn btn-primary" onclick="updateESP32IP()">Connect</button>
+                        </div>
+                    </div>
+                    <div class="config-meta">
+                        <span><i class="fas fa-info-circle"></i> Default: 192.168.4.1 (ESP32 AP mode)</span>
+                    </div>
+                </div>
+                <a href="http://{{ esp32_ip }}" target="_blank" class="btn btn-secondary btn-block mt-1" id="openEspBtn">
+                    <i class="fas fa-external-link-alt"></i> Open ESP32 Interface Directly
+                </a>
+            </div>
+
+            <!-- ESP32 EMBEDDED INTERFACE -->
+            <div class="card iframe-card">
+                <div class="iframe-header">
+                    <h3 class="card-title">ESP32 Live Interface</h3>
+                    <button class="btn btn-secondary btn-xs" onclick="reloadIframe()">
+                        <i class="fas fa-redo"></i> Reload
+                    </button>
+                </div>
+                <div class="iframe-wrap">
+                    <iframe id="espIframe"
+                            src="http://{{ esp32_ip }}"
+                            class="esp-iframe"
+                            sandbox="allow-scripts allow-same-origin allow-forms"
+                            loading="lazy">
+                    </iframe>
+                    <div class="iframe-overlay" id="iframeOverlay">
+                        <i class="fas fa-wifi"></i>
+                        <p>Connect to ESP32 WiFi AP to view the live trolley interface</p>
+                        <button class="btn btn-primary" onclick="reloadIframe()">Retry Connection</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    @import url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css");
+
+    .control-layout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        width: 100%;
+        max-width: 1100px;
+        margin: 0 auto;
+    }
+
+    /* ---- ESP32 STATUS BAR ---- */
+    .esp-status-bar {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        background: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        margin-bottom: 2rem;
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+    }
+
+    .esp-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--danger-red);
+        flex-shrink: 0;
+        transition: background 0.3s;
+    }
+
+    .esp-dot.online {
+        background: var(--success-green);
+        box-shadow: 0 0 8px rgba(72, 187, 120, 0.6);
+        animation: pulse-glow 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-glow {
+        0%, 100% { box-shadow: 0 0 6px rgba(72, 187, 120, 0.4); }
+        50% { box-shadow: 0 0 14px rgba(72, 187, 120, 0.8); }
+    }
+
+    .btn-xs {
+        padding: 0.35rem 0.6rem;
+        font-size: 0.75rem;
+        margin-left: auto;
+    }
+
+    /* ---- D-PAD ---- */
+    .dpad-container {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .dpad {
+        display: grid;
+        grid-template-columns: 80px 80px 80px;
+        grid-template-rows: 80px 80px 80px;
+        gap: 6px;
+    }
+
+    .dpad-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--border-color);
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        border-radius: 12px;
+        font-size: 1.4rem;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        user-select: none;
+        -webkit-user-select: none;
+    }
+
+    .dpad-btn:hover {
+        background: var(--bg-secondary);
+        border-color: var(--accent-blue);
+    }
+
+    .dpad-btn:active, .dpad-btn.active {
+        background: var(--accent-blue);
+        color: white;
+        border-color: var(--accent-blue);
+        transform: scale(0.95);
+        box-shadow: 0 0 20px rgba(66, 153, 225, 0.4);
+    }
+
+    .dpad-up    { grid-column: 2; grid-row: 1; }
+    .dpad-left  { grid-column: 1; grid-row: 2; }
+    .dpad-center{ grid-column: 2; grid-row: 2; border-radius: 50%; background: var(--danger-red); color: white; border-color: var(--danger-red); }
+    .dpad-center:hover { background: #c53030; }
+    .dpad-center:active { transform: scale(0.9); }
+    .dpad-right { grid-column: 3; grid-row: 2; }
+    .dpad-down  { grid-column: 2; grid-row: 3; }
+
+    /* empty cells */
+    .dpad::before,
+    .dpad::after {
+        content: none;
+    }
+
+    .keyboard-hint {
+        text-align: center;
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        margin-bottom: 2rem;
+    }
+
+    .keyboard-hint kbd {
+        display: inline-block;
+        padding: 2px 7px;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        background: var(--bg-primary);
+        font-family: monospace;
+        font-size: 0.75rem;
+        color: var(--text-primary);
+    }
+
+    /* ---- FOLLOW TOGGLE ---- */
+    .follow-toggle-section {
+        margin-bottom: 2rem;
+    }
+
+    .section-label {
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-secondary);
+        margin-bottom: 0.75rem;
+    }
+
+    .toggle-row {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .toggle-switch {
+        position: relative;
+        width: 52px;
+        height: 28px;
+        cursor: pointer;
+    }
+
+    .toggle-switch input { display: none; }
+
+    .toggle-slider {
+        position: absolute;
+        inset: 0;
+        background: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        border-radius: 28px;
+        transition: all 0.3s;
+    }
+
+    .toggle-slider::before {
+        content: '';
+        position: absolute;
+        width: 22px;
+        height: 22px;
+        background: var(--text-secondary);
+        border-radius: 50%;
+        top: 2px;
+        left: 3px;
+        transition: all 0.3s;
+    }
+
+    .toggle-switch input:checked + .toggle-slider {
+        background: var(--success-green);
+        border-color: var(--success-green);
+    }
+
+    .toggle-switch input:checked + .toggle-slider::before {
+        transform: translateX(24px);
+        background: white;
+    }
+
+    .toggle-label {
+        font-weight: 600;
+        color: var(--text-primary);
+        font-size: 1rem;
+    }
+
+    /* ---- COMMAND LOG ---- */
+    .cmd-log-container {
+        margin-top: 0.5rem;
+    }
+
+    .cmd-log {
+        max-height: 150px;
+        overflow-y: auto;
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        background: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        font-family: 'JetBrains Mono', 'Fira Code', monospace;
+        font-size: 0.78rem;
+        line-height: 1.6;
+    }
+
+    .log-entry {
+        padding: 2px 0;
+        border-bottom: 1px solid rgba(74, 85, 104, 0.3);
+    }
+
+    .log-entry:last-child { border-bottom: none; }
+
+    .log-ok { color: var(--success-green); }
+    .log-warn { color: #ECC94B; }
+    .log-err { color: var(--danger-red); }
+    .log-info { color: var(--text-secondary); }
+
+    /* ---- RIGHT PANEL ---- */
+    .right-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .config-card {
+        padding: 1.5rem;
+    }
+
+    .config-card .card-title {
+        font-size: 1.3rem;
+        margin-bottom: 1rem;
+    }
+
+    .ip-config .input-group {
+        display: flex;
+        gap: 0.75rem;
+    }
+
+    .ip-config .form-control {
+        flex-grow: 1;
+    }
+
+    .config-meta {
+        margin-top: 0.5rem;
+        font-size: 0.78rem;
+        color: var(--text-secondary);
+    }
+
+    .btn-block {
+        display: block;
+        width: 100%;
+        text-align: center;
+    }
+
+    .mt-1 { margin-top: 0.75rem; }
+
+    /* ---- IFRAME ---- */
+    .iframe-card {
+        padding: 1.5rem;
+        flex-grow: 1;
+    }
+
+    .iframe-card .card-title {
+        font-size: 1.3rem;
+    }
+
+    .iframe-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .iframe-wrap {
+        position: relative;
+        border-radius: 0.5rem;
+        overflow: hidden;
+        border: 1px solid var(--border-color);
+        background: var(--bg-primary);
+    }
+
+    .esp-iframe {
+        width: 100%;
+        height: 380px;
+        border: none;
+        background: var(--bg-primary);
+    }
+
+    .iframe-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(26, 32, 44, 0.92);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        color: var(--text-secondary);
+        text-align: center;
+        padding: 2rem;
+        transition: opacity 0.3s;
+    }
+
+    .iframe-overlay.hidden {
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .iframe-overlay i {
+        font-size: 2.5rem;
+        color: var(--accent-blue);
+    }
+
+    .iframe-overlay p {
+        max-width: 250px;
+        font-size: 0.9rem;
+        line-height: 1.5;
+    }
+
+    /* ---- RESPONSIVE ---- */
+    @media (max-width: 900px) {
+        .control-layout {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .dpad {
+            grid-template-columns: 65px 65px 65px;
+            grid-template-rows: 65px 65px 65px;
+            gap: 4px;
+        }
+        .dpad-btn { font-size: 1.1rem; border-radius: 10px; }
+    }
+
+    /* ---- RSSI TELEMETRY ---- */
+    .rssi-panel {
+        margin-bottom: 1.5rem;
+    }
+
+    .rssi-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .rssi-item {
+        background: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        border-radius: 0.5rem;
+        padding: 0.6rem 0.5rem;
+        text-align: center;
+    }
+
+    .rssi-label {
+        display: block;
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-secondary);
+        margin-bottom: 0.2rem;
+    }
+
+    .rssi-value {
+        display: block;
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: var(--accent-blue);
+    }
+
+    .rssi-bar-wrap {
+        height: 6px;
+        background: var(--bg-primary);
+        border-radius: 3px;
+        overflow: hidden;
+        border: 1px solid var(--border-color);
+    }
+
+    .rssi-bar {
+        height: 100%;
+        background: linear-gradient(90deg, var(--danger-red), #ECC94B, var(--success-green));
+        border-radius: 3px;
+        transition: width 0.5s ease;
+    }
+
+    .rssi-hint {
+        font-size: 0.7rem;
+        color: var(--text-secondary);
+        margin-top: 0.4rem;
+        text-align: center;
+    }
+</style>
+
+<script>
+    let espOnline = false;
+
+    // --- SEND COMMAND TO ESP32 VIA FLASK PROXY ---
+    async function sendCmd(cmd) {
+        highlightBtn(cmd);
+        try {
+            const res = await fetch('/api/esp32/command', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ command: cmd })
+            });
+            const data = await res.json();
+            addLog(data.message, data.esp32_reached ? 'log-ok' : 'log-warn');
+        } catch (e) {
+            addLog(`Error sending ${cmd}`, 'log-err');
+        }
+    }
+
+    async function toggleFollow(activate) {
+        try {
+            const res = await fetch('/api/mode/follow', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ activate })
+            });
+            const data = await res.json();
+            document.getElementById('followLabel').textContent = activate ? 'ON' : 'OFF';
+            addLog(data.message, data.esp32_reached ? 'log-ok' : 'log-warn');
+            // Start/stop RSSI telemetry
+            if (activate) startRSSIPolling();
+            else stopRSSIPolling();
+        } catch (e) {
+            addLog('Failed to toggle follow mode', 'log-err');
+        }
+    }
+
+    // --- ESP32 PING ---
+    async function pingESP32() {
+        try {
+            const res = await fetch('/api/esp32/ping');
+            const data = await res.json();
+            espOnline = data.reachable;
+            updateEspIndicator(data.reachable, data.ip);
+        } catch {
+            espOnline = false;
+            updateEspIndicator(false, '');
+        }
+    }
+
+    function updateEspIndicator(online, ip) {
+        const dot = document.getElementById('espDot');
+        const txt = document.getElementById('espStatusText');
+        dot.classList.toggle('online', online);
+        txt.textContent = online ? `Connected to ${ip}` : 'ESP32 Offline';
+        document.getElementById('iframeOverlay').classList.toggle('hidden', online);
+    }
+
+    // --- UPDATE ESP32 IP ---
+    async function updateESP32IP() {
+        const ip = document.getElementById('espIpInput').value.trim();
+        if (!ip) return;
+        try {
+            await fetch('/api/esp32/ip', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ ip })
+            });
+            document.getElementById('espIframe').src = `http://${ip}`;
+            document.getElementById('openEspBtn').href = `http://${ip}`;
+            addLog(`IP updated to ${ip}`, 'log-info');
+            setTimeout(pingESP32, 500);
+        } catch {
+            addLog('Failed to update IP', 'log-err');
+        }
+    }
+
+    // --- IFRAME RELOAD ---
+    function reloadIframe() {
+        const iframe = document.getElementById('espIframe');
+        iframe.src = iframe.src;
+        setTimeout(pingESP32, 1500);
+    }
+
+    // --- D-PAD VISUAL HIGHLIGHT ---
+    function highlightBtn(cmd) {
+        const map = {
+            forward: 'btnForward', backward: 'btnBackward',
+            left: 'btnLeft', right: 'btnRight', stop: 'btnStop'
+        };
+        document.querySelectorAll('.dpad-btn').forEach(b => b.classList.remove('active'));
+        const btn = document.getElementById(map[cmd]);
+        if (btn) btn.classList.add('active');
+        if (cmd !== 'stop') setTimeout(() => btn?.classList.remove('active'), 200);
+    }
+
+    // --- COMMAND LOG ---
+    function addLog(msg, cls) {
+        const log = document.getElementById('cmdLog');
+        const time = new Date().toLocaleTimeString('en-US', {hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit'});
+        const entry = document.createElement('div');
+        entry.className = `log-entry ${cls}`;
+        entry.textContent = `[${time}] ${msg}`;
+        log.prepend(entry);
+
+        // keep only last 50 entries
+        while (log.children.length > 50) log.removeChild(log.lastChild);
+    }
+
+    // --- KEYBOARD CONTROLS ---
+    const keyMap = {
+        'ArrowUp': 'forward', 'w': 'forward', 'W': 'forward',
+        'ArrowDown': 'backward', 's': 'backward', 'S': 'backward',
+        'ArrowLeft': 'left', 'a': 'left', 'A': 'left',
+        'ArrowRight': 'right', 'd': 'right', 'D': 'right',
+        ' ': 'stop',
+    };
+    const activeKeys = new Set();
+
+    document.addEventListener('keydown', e => {
+        if (activeKeys.has(e.key)) return; // ignore repeat
+        const cmd = keyMap[e.key];
+        if (cmd) {
+            e.preventDefault();
+            activeKeys.add(e.key);
+            sendCmd(cmd);
+        }
+    });
+
+    document.addEventListener('keyup', e => {
+        const cmd = keyMap[e.key];
+        if (cmd && cmd !== 'stop') {
+            activeKeys.delete(e.key);
+            sendCmd('stop');
+        }
+        if (cmd === 'stop') activeKeys.delete(e.key);
+    });
+
+    // --- RSSI POLLING ---
+    let rssiInterval = null;
+
+    async function pollRSSI() {
+        try {
+            const res = await fetch('/api/esp32/rssi');
+            const d = await res.json();
+            if (d.dist < 0) return; // ESP32 unreachable
+            document.getElementById('rssiValue').textContent = `${d.best} dBm`;
+            document.getElementById('rssiAngle').textContent = `${d.angle}°`;
+            document.getElementById('rssiDist').textContent = `${d.dist.toFixed(2)} m`;
+            // RSSI bar: map -100...-30 to 0...100%
+            const pct = Math.max(0, Math.min(100, ((d.best + 100) / 70) * 100));
+            document.getElementById('rssiBar').style.width = `${pct}%`;
+        } catch {}
+    }
+
+    function startRSSIPolling() {
+        if (!rssiInterval) rssiInterval = setInterval(pollRSSI, 1500);
+    }
+
+    function stopRSSIPolling() {
+        if (rssiInterval) { clearInterval(rssiInterval); rssiInterval = null; }
+        document.getElementById('rssiValue').textContent = '-- dBm';
+        document.getElementById('rssiAngle').textContent = '--°';
+        document.getElementById('rssiDist').textContent = '-- m';
+        document.getElementById('rssiBar').style.width = '0%';
+    }
+
+    // --- INIT ---
+    document.addEventListener('DOMContentLoaded', () => {
+        pingESP32();
+        setInterval(pingESP32, 8000);
+    });
+</script>
+{% endblock %}

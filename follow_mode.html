@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% block title %}Human Following - Smart Trolley{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+    <div class="card follow-mode-card">
+        <h2 class="card-title">Human Following Mode</h2>
+        <p class="card-subtitle">
+            The trolley intelligently follows you using Bluetooth and ultrasonic distance detection.
+        </p>
+
+        <!-- STATUS -->
+        <div class="status-display">
+            <span id="statusIcon" class="status-icon"><i class="fas fa-ban"></i></span>
+            <span id="followStatusText" class="status-text">
+                Following Mode: OFF
+            </span>
+        </div>
+
+        <!-- ACTION BUTTONS -->
+        <div class="control-panel button-group">
+            <button class="btn btn-success" id="activateBtn" onclick="toggleFollow(true)">
+                <i class="fas fa-play"></i> Activate Following
+            </button>
+            <button class="btn btn-danger hidden" id="deactivateBtn" onclick="toggleFollow(false)">
+                <i class="fas fa-stop"></i> Deactivate Following
+            </button>
+        </div>
+
+        <!-- INFO PANEL -->
+        <div class="info-panel card">
+            <h3 class="info-panel-title">What is Human Following Mode?</h3>
+            <ul class="info-list">
+                <li><i class="fas fa-bluetooth-b"></i> It Follows Your Device</li>
+                <li><i class="fas fa-car-alt"></i> It Detects Obstacles and Dodges Them</li>
+                <li><i class="fas fa-tachometer-alt"></i> It Adjusts Its Speed Based on Your Speed</li>
+            </ul>
+        </div>
+
+        <!-- RESULT -->
+        <div id="followResult" class="alert hidden mt-2"></div>
+    </div>
+</div>
+
+<style>
+    .follow-mode-card {
+        width: 100%;
+        max-width: 700px;
+    }
+
+    .status-display {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        font-size: 1.5rem;
+        font-weight: 600;
+        padding: 1rem;
+        border-radius: 0.75rem;
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        margin-bottom: 2rem;
+    }
+
+    .status-icon {
+        color: var(--danger-red);
+    }
+
+    .status-icon.active {
+        color: var(--success-green);
+    }
+
+    .status-text {
+        color: var(--text-primary);
+    }
+
+    .button-group {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .button-group .btn {
+        min-width: 180px;
+    }
+
+    .info-panel {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+    }
+
+    .info-panel-title {
+        font-size: 1.25rem;
+        color: var(--text-primary);
+        margin-bottom: 1rem;
+    }
+
+    .info-list {
+        list-style: none;
+        padding-left: 0;
+    }
+
+    .info-list li {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+        color: var(--text-secondary);
+    }
+
+    .info-list li i {
+        color: var(--accent-blue);
+        font-size: 1.1rem;
+    }
+
+    /* FontAwesome icons */
+    @import url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css");
+
+    .alert-success {
+        background-color: rgba(72, 187, 120, 0.15);
+        border: 1px solid rgba(72, 187, 120, 0.4);
+        color: var(--success-green);
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+    }
+
+    .alert-warning {
+        background-color: rgba(236, 201, 75, 0.15);
+        border: 1px solid rgba(236, 201, 75, 0.4);
+        color: #ECC94B;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+    }
+</style>
+
+<script>
+    let followingActive = false;
+
+    async function toggleFollow(activate) {
+        const res = await fetch('/api/mode/follow', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ activate })
+        });
+        const data = await res.json();
+
+        followingActive = activate;
+
+        document.getElementById('followStatusText').textContent =
+            `Following Mode: ${activate ? 'ON' : 'OFF'}`;
+
+        const statusIcon = document.getElementById('statusIcon');
+        statusIcon.innerHTML = activate ? '<i class="fas fa-video"></i>' : '<i class="fas fa-ban"></i>';
+        statusIcon.classList.toggle('active', activate);
+
+        document.getElementById('activateBtn').classList.toggle('hidden', activate);
+        document.getElementById('deactivateBtn').classList.toggle('hidden', !activate);
+
+        const espHint = data.esp32_reached
+            ? ''
+            : ' (ESP32 not reachable — connect to trolley WiFi)';
+        showResult(
+            (data.message || `Following mode ${activate ? 'activated' : 'deactivated'}`) + espHint,
+            data.esp32_reached ? 'alert-success' : 'alert-warning'
+        );
+    }
+
+    function showResult(msg, type) {
+        const el = document.getElementById('followResult');
+        el.textContent = msg;
+        el.className = `alert ${type}`;
+        el.classList.remove('hidden');
+
+        setTimeout(() => el.classList.add('hidden'), 3000);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('statusIcon').innerHTML = '<i class="fas fa-ban"></i>';
+    });
+</script>
+{% endblock %}
+

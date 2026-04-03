@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Trolley Modes - Smart Trolley{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+    <div class="container">
+        <h1 class="card-title text-center">Select Your Trolley Mode</h1>
+        <p class="card-subtitle text-center">Choose the best mode for your current needs.</p>
+
+        <div class="mode-grid">
+            <a href="/self-outside" class="card mode-card">
+                <div class="mode-icon"><i class="fas fa-map-marked-alt"></i></div>
+                <h3>Self-Moving Outside</h3>
+                <p>GPS navigation for open areas.</p>
+            </a>
+
+            <a href="/self-inside" class="card mode-card">
+                <div class="mode-icon"><i class="fas fa-airport"></i></div>
+                <h3>Self-Moving Inside</h3>
+                <p>PNR-based airport navigation.</p>
+            </a>
+
+            <a href="/follow" class="card mode-card">
+                <div class="mode-icon"><i class="fas fa-walking"></i></div>
+                <h3>Human Following Mode</h3>
+                <p>Trolley follows you automatically.</p>
+            </a>
+
+            <a href="/control" class="card mode-card mode-card-highlight">
+                <div class="mode-icon"><i class="fas fa-gamepad"></i></div>
+                <h3>Manual Control</h3>
+                <p>Drive the trolley directly via ESP32.</p>
+                <span class="mode-badge">LIVE</span>
+            </a>
+
+            <a href="/transactions" class="card mode-card">
+                <div class="mode-icon"><i class="fas fa-history"></i></div>
+                <h3>Transaction History</h3>
+                <p>View your past payments.</p>
+            </a>
+        </div>
+
+        {% if not paid %}
+        <div class="alert alert-warning text-center mt-3">
+            <p>Please complete payment to access advanced trolley modes.</p>
+            <a href="/payment" class="btn btn-primary mt-2">Go to Payment</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .mode-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 2rem;
+        margin-top: 3rem;
+    }
+
+    .mode-card {
+        text-align: center;
+        padding: 2.5rem;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+    }
+
+    .mode-card:hover {
+        transform: translateY(-5px) scale(1.02);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        border-color: var(--accent-blue);
+    }
+
+    .mode-icon {
+        font-size: 3rem;
+        color: var(--accent-blue);
+        margin-bottom: 1rem;
+    }
+
+    .mode-card h3 {
+        font-size: 1.5rem;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+    }
+
+    .mode-card p {
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+    }
+
+    .mode-card-highlight {
+        position: relative;
+        border-color: var(--accent-blue) !important;
+        box-shadow: 0 0 20px rgba(66, 153, 225, 0.15);
+    }
+
+    .mode-badge {
+        display: inline-block;
+        margin-top: 0.75rem;
+        padding: 0.2rem 0.7rem;
+        border-radius: 9999px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        background: var(--success-green);
+        color: white;
+        animation: badge-pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes badge-pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+    }
+
+    .alert {
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin-top: 1.5rem;
+    }
+
+    .alert-warning {
+        background-color: rgba(255, 193, 7, 0.1);
+        border-color: rgba(255, 193, 7, 0.5);
+        color: #ffc107;
+    }
+
+    .mt-3 { margin-top: 1.5rem; }
+    .mt-2 { margin-top: 1rem; }
+
+    @import url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css");
+
+    @media (max-width: 768px) {
+        .mode-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}

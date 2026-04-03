@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Smart Trolley{% endblock %}</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+
+<body>
+
+{% if user_email %}
+<nav class="navbar">
+    <div class="nav-content">
+        <div class="logo">Smart<span>Trolley</span></div>
+        <ul class="nav-links">
+            <li><a href="/transactions">Transactions</a></li>
+            <li><a href="/modes">Modes</a></li>
+            <li><a href="/control" class="nav-control-link"><i class="fas fa-gamepad"></i> Control</a></li>
+            <li><a href="/payment">Payment</a></li>
+            <li><a href="/logout">Logout</a></li>
+        </ul>
+    </div>
+</nav>
+
+<div class="container">
+    <!-- LIVE STATUS DASHBOARD -->
+    <div class="status-bar">
+        <div class="status-item">
+            <div class="status-label">Connection</div>
+            <div class="status-value status-disconnected" id="connectionStatus">Disconnected</div>
+        </div>
+        <div class="status-item">
+            <div class="status-label">Mode</div>
+            <div class="status-value" id="modeStatus">Idle</div>
+        </div>
+        <div class="status-item">
+            <div class="status-label">State</div>
+            <div class="status-value" id="stateStatus">Idle</div>
+        </div>
+        <div class="status-item">
+            <div class="status-label">Current PNR</div>
+            <div class="status-value" id="pnrStatus">None</div>
+        </div>
+        <div class="status-item">
+            <div class="status-label">ESP32</div>
+            <div class="status-value status-disconnected" id="esp32Status">Offline</div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="page-root">
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+</div>
+
+{% if user_email %}
+<script>
+    async function updateStatus() {
+        try {
+            const res = await fetch('/api/status');
+            const data = await res.json();
+
+            const conn = document.getElementById('connectionStatus');
+            conn.textContent = data.connected ? 'Connected' : 'Disconnected';
+            conn.className = `status-value status-${data.connected ? 'connected' : 'disconnected'}`;
+
+            document.getElementById('modeStatus').textContent =
+                data.mode || 'Idle';
+
+            const stateEl = document.getElementById('stateStatus');
+            stateEl.textContent = data.state || 'Idle';
+            stateEl.style.color = (data.state === 'Active') ? '#48bb78' : '';
+
+            document.getElementById('pnrStatus').textContent =
+                data.pnr || 'None';
+        } catch (e) {
+            console.error('Status update failed');
+        }
+    }
+
+    async function checkESP32() {
+        try {
+            const res = await fetch('/api/esp32/ping');
+            const data = await res.json();
+            const el = document.getElementById('esp32Status');
+            el.textContent = data.reachable ? 'Online' : 'Offline';
+            el.className = `status-value status-${data.reachable ? 'connected' : 'disconnected'}`;
+        } catch {
+            const el = document.getElementById('esp32Status');
+            if (el) { el.textContent = 'Offline'; el.className = 'status-value status-disconnected'; }
+        }
+    }
+
+    setInterval(updateStatus, 2000);
+    setInterval(checkESP32, 6000);
+    updateStatus();
+    checkESP32();
+</script>
+{% endif %}
+
+</body>
+</html>
+

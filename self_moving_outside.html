@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% block title %}Self-Moving Outside - Smart Trolley{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+    <div class="card navigation-card">
+        <h2 class="card-title">Self-Moving Navigation</h2>
+        <p class="card-subtitle">
+            Select a destination on the map. The trolley will navigate to it using GPS.
+        </p>
+
+        <!-- MAP PANEL -->
+        <div class="map-panel">
+            <div id="map" class="map-box"></div>
+        </div>
+
+        <!-- INFO GRID -->
+        <div class="info-grid">
+            <div class="info-item">
+                <span class="info-label">Current Position</span>
+                <span id="currentPos" class="info-value">Detecting GPS…</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Destination</span>
+                <span id="destPos" class="info-value">Click map to select</span>
+            </div>
+        </div>
+
+        <!-- ACTION PANEL -->
+        <div class="control-panel">
+            <button class="btn btn-primary" id="startNavBtn" onclick="startNavigation()" disabled>
+                Start Navigation
+            </button>
+        </div>
+
+        <!-- RESULT -->
+        <div id="navResult" class="alert hidden"></div>
+    </div>
+</div>
+
+<style>
+    .navigation-card {
+        width: 100%;
+    }
+
+    .map-panel {
+        border-radius: 0.75rem;
+        overflow: hidden;
+        border: 1px solid var(--border-color);
+        background-color: var(--bg-primary);
+        margin-bottom: 1.5rem;
+    }
+
+    .map-box {
+        height: 400px;
+        width: 100%;
+        background-color: var(--bg-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-secondary);
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .info-item {
+        background-color: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        border-radius: 0.5rem;
+        padding: 1rem;
+    }
+
+    .info-label {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .info-value {
+        display: block;
+        margin-top: 0.4rem;
+        font-size: 1.1rem;
+        color: var(--text-primary);
+        font-weight: 600;
+    }
+
+    .control-panel {
+        text-align: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .map-box .gm-style-iw-d {
+        color: #000;
+    }
+
+    @media (max-width: 768px) {
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+        .map-box {
+            height: 300px;
+        }
+    }
+</style>
+
+<script>
+    let map, userPos = null, destPos = null;
+
+    function initMap() {
+        if (typeof google === 'undefined') {
+            demoMapMode();
+            return;
+        }
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                pos => {
+                    userPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                    document.getElementById('currentPos').textContent =
+                        `${userPos.lat.toFixed(4)}, ${userPos.lng.toFixed(4)}`;
+
+                    map = new google.maps.Map(document.getElementById('map'), {
+                        zoom: 15,
+                        center: userPos,
+                        styles: [
+                            { elementType: "geometry", stylers: [{ color: "#2D3748" }] },
+                            { elementType: "labels.text.stroke", stylers: [{ color: "#2D3748" }] },
+                            { elementType: "labels.text.fill", stylers: [{ color: "#CBD5E0" }] },
+                        ]
+                    });
+
+                    new google.maps.Marker({
+                        position: userPos,
+                        map,
+                        label: "YOU"
+                    });
+
+                    map.addListener('click', e => {
+                        destPos = { lat: e.latLng.lat(), lng: e.latLng.lng() };
+                        document.getElementById('destPos').textContent =
+                            `${destPos.lat.toFixed(4)}, ${destPos.lng.toFixed(4)}`;
+                        document.getElementById('startNavBtn').disabled = false;
+
+                        if (window.destMarker) window.destMarker.setMap(null);
+
+                        window.destMarker = new google.maps.Marker({
+                            position: destPos,
+                            map,
+                            label: "DEST"
+                        });
+                    });
+                },
+                demoMapMode
+            );
+        }
+    }
+
+    function demoMapMode() {
+        document.getElementById('currentPos').textContent = 'Demo Mode';
+        document.getElementById('destPos').textContent = 'Click map to simulate';
+
+        const mapDiv = document.getElementById('map');
+        mapDiv.innerHTML = `
+            <div style="height:100%;display:flex;align-items:center;justify-content:center;
+            background:var(--bg-primary);color:var(--text-secondary);font-size:1.1rem;">
+                Click to select destination (Demo Mode)
+            </div>
+        `;
+
+        mapDiv.onclick = () => {
+            destPos = { lat: 12.97, lng: 77.59 };
+            document.getElementById('destPos').textContent = 'Demo Destination';
+            document.getElementById('startNavBtn').disabled = false;
+            showResult('Demo destination selected', 'alert-success');
+        };
+    }
+
+    async function startNavigation() {
+        if (!destPos) {
+            showResult('Select a destination first!', 'alert-danger');
+            return;
+        }
+
+        const res = await fetch('/api/mode/self-outside', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(destPos)
+        });
+        const data = await res.json();
+        showResult(data.message || 'Navigation started', 'alert-success');
+    }
+
+    function showResult(msg, type) {
+        const el = document.getElementById('navResult');
+        el.textContent = msg;
+        el.className = `alert ${type}`;
+        el.classList.remove('hidden');
+        setTimeout(() => el.classList.add('hidden'), 3000);
+    }
+</script>
+
+<script async src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap"></script>
+{% endblock %}
+

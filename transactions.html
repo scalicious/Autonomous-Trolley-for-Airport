@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}Transaction History - Smart Trolley{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+    <div class="card transaction-card">
+        <h2 class="card-title">Transaction History</h2>
+        <p class="card-subtitle">All your completed payments in one place.</p>
+
+        {% if transactions %}
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Date & Time</th>
+                        <th>Payment Method</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Invoice</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in transactions %}
+                    <tr>
+                        <td>{{ t.time }}</td>
+                        <td>{{ t.method | upper }}</td>
+                        <td>₹{{ t.amount }}</td>
+                        <td>
+                            <span class="status-badge status-success">{{ t.status }}</span>
+                        </td>
+                        <td>
+                            <a href="/invoice/{{ t.id }}" class="btn btn-secondary btn-sm">Download</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon"><i class="fas fa-credit-card"></i></div>
+            <h3>No transactions yet</h3>
+            <p>Your completed payments will appear here.</p>
+            <a href="/modes" class="btn btn-primary">Go to Modes</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .transaction-card {
+        width: 100%;
+    }
+
+    .table-responsive {
+        overflow-x: auto;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1.5rem;
+    }
+
+    .data-table th,
+    .data-table td {
+        padding: 0.8rem 1rem;
+        border-bottom: 1px solid var(--border-color);
+        text-align: left;
+    }
+
+    .data-table th {
+        background-color: var(--bg-secondary);
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .data-table tr:hover {
+        background-color: rgba(var(--accent-blue-rgb), 0.1);
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 0.3em 0.7em;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .status-success {
+        background-color: rgba(72, 187, 120, 0.2);
+        color: var(--success-green);
+        border: 1px solid rgba(72, 187, 120, 0.5);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 0.75rem;
+        margin-top: 2rem;
+    }
+
+    .empty-icon {
+        font-size: 3rem;
+        color: var(--accent-blue);
+        margin-bottom: 1rem;
+    }
+
+    .empty-state h3 {
+        font-size: 1.5rem;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+    }
+
+    .empty-state p {
+        color: var(--text-secondary);
+        margin-bottom: 1.5rem;
+    }
+
+    .btn-sm {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+    }
+</style>
+{% endblock %}
+

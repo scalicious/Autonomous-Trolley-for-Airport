@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Login - Smart Trolley{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+    <div class="card auth-card">
+        <h2 class="card-title">Login to Smart Trolley</h2>
+        <p class="card-subtitle">Access your personalized trolley control dashboard.</p>
+
+        <form method="POST" action="/login">
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" name="email" class="form-control" placeholder="your@example.com" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" class="form-control" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-full">Login</button>
+        </form>
+
+        <div class="auth-footer">
+            <p>New here? <a href="/register">Register</a></p>
+            <p>Or <a href="/guest" class="btn-link">Continue as Guest</a></p>
+        </div>
+    </div>
+</div>
+
+<style>
+    .page-wrapper {
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: var(--bg-primary);
+        padding: 2rem;
+    }
+
+    .auth-card {
+        max-width: 450px;
+        width: 100%;
+        text-align: center;
+        padding: 2.5rem;
+    }
+
+    .card-title {
+        font-size: 2rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .card-subtitle {
+        color: var(--text-secondary);
+        margin-bottom: 2rem;
+    }
+
+    .form-group {
+        text-align: left;
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+        color: var(--text-secondary);
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.8rem 1rem;
+        border-radius: 0.5rem;
+        border: 1px solid var(--border-color);
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        font-size: 1rem;
+    }
+
+    .form-control::placeholder {
+        color: var(--text-secondary);
+    }
+
+    .form-control:focus {
+        border-color: var(--accent-blue);
+        box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.5);
+    }
+
+    .btn.btn-primary {
+        width: 100%;
+        padding: 0.9rem 1.5rem;
+        margin-top: 1rem;
+    }
+
+    .auth-footer {
+        margin-top: 2rem;
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+    }
+
+    .auth-footer a {
+        color: var(--accent-blue);
+        text-decoration: none;
+        margin-left: 0.3rem;
+    }
+
+    .auth-footer a:hover {
+        text-decoration: underline;
+    }
+
+    .w-full {
+        width: 100%;
+    }
+</style>
+{% endblock %}

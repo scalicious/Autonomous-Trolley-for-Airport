@@ -1,0 +1,391 @@
+{% extends "base.html" %}
+{% block title %}Secure Payment - Smart Trolley{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+    <div class="payment-container">
+        <!-- LEFT: PAYMENT METHODS -->
+        <div class="card payment-main-card">
+            <h2 class="card-title">Payment Method</h2>
+
+            <!-- METHOD SELECTOR -->
+            <div class="method-tabs">
+                <button class="btn btn-secondary method-tab active" onclick="selectMethod('card')">Card</button>
+                <button class="btn btn-secondary method-tab" onclick="selectMethod('upi')">UPI</button>
+                <button class="btn btn-secondary method-tab" onclick="selectMethod('netbanking')">Net Banking</button>
+            </div>
+
+            <!-- CARD -->
+            <div class="method-box active" id="card">
+                <div class="card-preview">
+                    <span class="chip"></span>
+                    <span id="cardBrand" class="card-brand">VISA</span>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="cardNumber">Card Number</label>
+                        <input type="text" id="cardNumber" class="form-control" placeholder="XXXX XXXX XXXX XXXX" maxlength="19">
+                    </div>
+                    <div class="form-group">
+                        <label for="nameOnCard">Name on Card</label>
+                        <input type="text" id="nameOnCard" class="form-control" placeholder="John Doe">
+                    </div>
+                    <div class="form-group">
+                        <label for="expiryDate">Expiry (MM/YY)</label>
+                        <input type="text" id="expiryDate" class="form-control" placeholder="MM / YY" maxlength="5">
+                    </div>
+                    <div class="form-group">
+                        <label for="cvv">CVV</label>
+                        <input type="password" id="cvv" class="form-control" placeholder="CVV" maxlength="3">
+                    </div>
+                </div>
+            </div>
+
+            <!-- UPI -->
+            <div class="method-box" id="upi">
+                <p class="text-secondary">Pay instantly using UPI</p>
+
+                <div class="upi-row">
+                    <div class="upi-app">Google Pay</div>
+                    <div class="upi-app">PhonePe</div>
+                    <div class="upi-app">Paytm</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="upiId">UPI ID</label>
+                    <input type="text" id="upiId" class="form-control" placeholder="name@bank">
+                </div>
+                <div class="qr-placeholder">QR CODE</div>
+            </div>
+
+            <!-- NET BANKING -->
+            <div class="method-box" id="netbanking">
+                <p class="text-secondary">Select your bank</p>
+
+                <div class="bank-grid">
+                    <div class="bank">HDFC</div>
+                    <div class="bank">ICICI</div>
+                    <div class="bank">SBI</div>
+                    <div class="bank">Axis</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="otherBank">Other Bank</label>
+                    <select id="otherBank" class="form-control">
+                        <option>Select Other Bank</option>
+                        <option>Kotak</option>
+                        <option>Yes Bank</option>
+                        <option>PNB</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- COUPON -->
+            <div class="coupon-group">
+                <input type="text" id="couponInput" class="form-control" placeholder="Promo Code">
+                <button class="btn btn-secondary" onclick="applyCoupon()">Apply</button>
+            </div>
+            <div id="couponMsg" class="text-center mt-1"></div>
+
+            <!-- PAY -->
+            <button class="btn btn-primary w-full mt-2" onclick="completePayment()">
+                Complete Payment
+            </button>
+
+            <!-- TRUST -->
+            <div class="text-secondary text-sm mt-2 text-center">
+                🔒 SSL Secured • PCI-DSS Compliant
+            </div>
+        </div>
+
+        <!-- RIGHT: ORDER SUMMARY -->
+        <div class="card summary-card">
+            <h3 class="card-title">Order Summary</h3>
+
+            <div class="summary-row">
+                <span>Selected Service</span>
+                <strong id="serviceName">Smart Trolley</strong>
+            </div>
+
+            <div class="summary-row">
+                <span>Amount</span>
+                <strong>₹<span id="amountValue">300</span></strong>
+            </div>
+
+            <div class="summary-row total">
+                <span>Total</span>
+                <strong>₹<span id="totalValue">300</span></strong>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .payment-container {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 2rem;
+        width: 100%;
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+
+    .payment-main-card {
+        padding: 2.5rem;
+    }
+
+    .method-tabs {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .method-tab {
+        flex-grow: 1;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        background-color: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        color: var(--text-secondary);
+        cursor: pointer;
+    }
+
+    .method-tab.active {
+        background-color: var(--accent-blue);
+        color: white;
+        border-color: var(--accent-blue);
+    }
+
+    .method-tab:hover:not(.active) {
+        background-color: var(--bg-secondary);
+        color: var(--text-primary);
+    }
+
+    .method-box {
+        display: none;
+        margin-bottom: 1.5rem;
+    }
+
+    .method-box.active {
+        display: block;
+    }
+
+    .card-preview {
+        height: 160px;
+        background: linear-gradient(135deg, var(--bg-primary), var(--bg-secondary));
+        border-radius: 0.75rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        border: 1px solid var(--border-color);
+    }
+
+    .chip {
+        width: 45px;
+        height: 35px;
+        background-color: gold;
+        border-radius: 6px;
+    }
+
+    .card-brand {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+
+    .upi-row {
+        display: flex;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .upi-app {
+        flex-grow: 1;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        background-color: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        text-align: center;
+        color: var(--text-secondary);
+        cursor: pointer;
+    }
+
+    .upi-app:hover {
+        background-color: var(--bg-secondary);
+        color: var(--text-primary);
+    }
+
+    .qr-placeholder {
+        margin-top: 1rem;
+        height: 120px;
+        border: 1px dashed var(--border-color);
+        border-radius: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-secondary);
+    }
+
+    .bank-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .bank {
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--border-color);
+        border-radius: 0.5rem;
+        text-align: center;
+        background-color: var(--bg-primary);
+        color: var(--text-secondary);
+        cursor: pointer;
+    }
+
+    .bank:hover {
+        background-color: var(--bg-secondary);
+        color: var(--text-primary);
+    }
+
+    .coupon-group {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 1.5rem;
+    }
+
+    .coupon-group .form-control {
+        flex-grow: 1;
+    }
+
+    .summary-card {
+        padding: 2rem;
+    }
+
+    .summary-card .card-title {
+        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.75rem;
+        color: var(--text-secondary);
+    }
+
+    .summary-row strong {
+        color: var(--text-primary);
+    }
+
+    .summary-row.total {
+        border-top: 1px solid var(--border-color);
+        padding-top: 1rem;
+        margin-top: 1rem;
+        font-size: 1.1rem;
+        font-weight: 700;
+    }
+
+    .summary-row.total strong {
+        color: var(--accent-blue);
+    }
+
+    .text-sm { font-size: 0.8rem; }
+    .mt-1 { margin-top: 0.5rem; }
+    .mt-2 { margin-top: 1rem; }
+
+    @media (max-width: 900px) {
+        .payment-container {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 600px) {
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<script>
+    function selectMethod(method) {
+        document.querySelectorAll('.method-tab').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.method-box').forEach(b => b.classList.remove('active'));
+        document.querySelector(`.method-tab[onclick="selectMethod('${method}')"]`).classList.add('active');
+        document.getElementById(method).classList.add('active');
+    }
+
+    function applyCoupon() {
+        const code = document.getElementById("couponInput").value;
+        const msg = document.getElementById("couponMsg");
+        if (code === "SAVE50") {
+            msg.textContent = "Coupon applied successfully!";
+            msg.style.color = "var(--success-green)";
+        } else {
+            msg.textContent = "Invalid coupon";
+            msg.style.color = "var(--danger-red)";
+        }
+    }
+
+    document.getElementById("cardNumber").addEventListener("input", e => {
+        const v = e.target.value.replace(/\D/g, "");
+        e.target.value = v.match(/.{1,4}/g)?.join(" ") || v;
+        document.getElementById("cardBrand").textContent =
+            v.startsWith("4") ? "VISA" :
+            v.startsWith("5") ? "MASTERCARD" : "CARD";
+    });
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const mode = sessionStorage.getItem("selectedMode");
+
+        const serviceMap = {
+            "self-inside": { name: "Airport Navigation", price: 150 },
+            "self-outside": { name: "Exit Navigation", price: 300 },
+            "follow": { name: "Follow Me Mode", price: 200 }
+        };
+
+        if (mode && serviceMap[mode]) {
+            document.getElementById("serviceName").textContent = serviceMap[mode].name;
+            document.getElementById("amountValue").textContent = serviceMap[mode].price;
+            document.getElementById("totalValue").textContent = serviceMap[mode].price;
+        }
+    });
+
+    async function completePayment() {
+        const selectedMode = sessionStorage.getItem("selectedMode");
+        const amount = document.getElementById("totalValue").textContent;
+        const method = document.querySelector('.method-tab.active').textContent.toLowerCase().replace(' ', '');
+
+        const res = await fetch("/api/payment/process", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                method: method,
+                amount: parseInt(amount)
+            })
+        });
+
+        const data = await res.json();
+
+        if (data.status === "success") {
+            if (selectedMode) {
+                window.location.href = "/" + selectedMode;
+            } else {
+                window.location.href = "/modes";
+            }
+        } else {
+            alert(data.message || "Payment failed");
+        }
+    }
+</script>
+{% endblock %}
+
